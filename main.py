@@ -22,6 +22,9 @@ def parse_args():
     parser.add_argument("--image", type=str, default=None, help="Kamera yerine bir resim dosyasi ac")
     parser.add_argument("--camera", type=int, default=0, help="Kamera numarasi (varsayilan: 0)")
     parser.add_argument("--lang", type=str, default="eng", help="Tesseract dili. Ornek: eng veya tur+eng")
+    parser.add_argument("--target-lang", type=str, default="tr", help="Ceviri hedef dili. Ornek: tr, en, de, fr")
+    parser.add_argument("--no-translate", action="store_true", help="Dil algilamayi koru, ceviriyi kapat")
+    parser.add_argument("--ocr-confidence", type=float, default=55, help="OCR guven esigi, 0-100 (varsayilan: 55)")
     parser.add_argument("--device", type=str, default="auto", help="GPU device (0, 1, ... veya 'cpu'). Varsayilan: auto (GPU varsa kullan)")
     return parser.parse_args()
 
@@ -119,13 +122,19 @@ def main():
 
     print("Model yukleniyor...")
     detector = ObjectDetector(device=args.device)
-    ocr = OCRReader(lang=args.lang)
+    ocr = OCRReader(
+        lang=args.lang,
+        target_language=args.target_lang,
+        translate=not args.no_translate,
+        min_confidence=args.ocr_confidence,
+    )
 
     print("\nTuslar:")
-    print("1 = Normal goruntu")
+    print("1 = Kamera")
     print("2 = Nesne tanima")
     print("3 = Metin okuma")
     print("4 = Lens modu")
+    print(f"Ceviri hedefi: {args.target_lang}" + (" (kapali)" if args.no_translate else ""))
     print("s = Ekrani kaydet")
     print("q veya ESC = Cikis\n")
 

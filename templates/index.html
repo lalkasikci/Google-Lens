@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lens Translate</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="brand-mark" aria-hidden="true"><span></span></div>
+      <div>
+        <p class="eyebrow">MINI GOOGLE LENS</p>
+        <h1>Görseldeki metni<br><em>anla ve çevir.</em></h1>
+        <p class="intro">Bir fotoğraf yükle veya kameradan yakala. Metnin dilini otomatik algılayıp seçtiğin dile çevirelim.</p>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <div class="controls card">
+        <div class="field-row">
+          <label>Metin modeli
+            <select id="ocrLanguage">
+              <option value="eng">İngilizce</option>
+              <option value="tur+eng">Türkçe + İngilizce</option>
+            </select>
+          </label>
+          <label>Hedef dil
+            <select id="targetLanguage">
+              <option value="tr">Türkçe</option>
+              <option value="en">İngilizce</option>
+              <option value="de">Almanca</option>
+              <option value="fr">Fransızca</option>
+              <option value="es">İspanyolca</option>
+              <option value="it">İtalyanca</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="range-label">
+          <span>Algılama hassasiyeti <output id="confidenceValue">55</output></span>
+          <input id="confidence" type="range" min="35" max="85" value="55">
+        </label>
+
+        <div id="dropzone" class="dropzone" tabindex="0" role="button">
+          <input id="fileInput" type="file" accept="image/*" hidden>
+          <div class="upload-icon">↗</div>
+          <strong>Fotoğrafı buraya bırak</strong>
+          <span>veya bilgisayarından seç</span>
+          <button id="chooseButton" class="button secondary" type="button">Görsel seç</button>
+        </div>
+
+        <div class="or"><span>veya</span></div>
+        <button id="cameraButton" class="button camera" type="button">Kamerayı aç</button>
+        <video id="camera" autoplay playsinline hidden></video>
+        <button id="captureButton" class="button primary" type="button" hidden>Fotoğraf çek</button>
+        <canvas id="canvas" hidden></canvas>
+      </div>
+
+      <div class="result card">
+        <div class="result-heading">
+          <div>
+            <p class="eyebrow">SONUÇ</p>
+            <h2>Algılanan metin</h2>
+          </div>
+          <span id="resultCount" class="count">Hazır</span>
+        </div>
+
+        <div id="previewPlaceholder" class="preview-placeholder">
+          <div class="focus-frame"></div>
+          <p>Sonuç görseli burada görünecek</p>
+        </div>
+        <img id="resultImage" class="result-image" alt="İşlenmiş sonuç" hidden>
+        <div id="status" class="status" aria-live="polite"></div>
+        <div id="translations" class="translations"></div>
+      </div>
+    </section>
+  </main>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
