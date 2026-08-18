@@ -64,6 +64,19 @@ class OCRReader:
         )
         return ((enlarged, scale), (otsu, scale))
 
+    def preprocess_fast(self, frame):
+        """Canli web akisi icin tek gecisli, dusuk maliyetli on isleme."""
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        scale = 1.25
+        enlarged = cv2.resize(
+            gray,
+            None,
+            fx=scale,
+            fy=scale,
+            interpolation=cv2.INTER_LINEAR,
+        )
+        return ((enlarged, scale),)
+
     def _read_data(self, image):
         return pytesseract.image_to_data(
             image,
@@ -109,12 +122,13 @@ class OCRReader:
 
         return True
 
-    def read(self, frame, synchronous_translation=False):
+    def read(self, frame, synchronous_translation=False, fast=False):
         if not self.available:
             return []
 
         candidates = []
-        for processed, scale in self.preprocess(frame):
+        prepared_images = self.preprocess_fast(frame) if fast else self.preprocess(frame)
+        for processed, scale in prepared_images:
             data = self._read_data(processed)
             candidates.append((self._data_score(data), data, scale))
 

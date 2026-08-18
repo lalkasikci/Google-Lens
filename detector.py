@@ -59,11 +59,11 @@ class ObjectDetector:
             "memory_percent": percent
         }
     
-    def detect_and_draw(self, frame):
+    def detect_and_draw(self, frame, image_size=640):
         results = self.model.predict(
             frame,
             conf=self.confidence,
-            imgsz=640,
+            imgsz=image_size,
             verbose=False,
             device=self.device,
             iou=0.45

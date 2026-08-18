@@ -1,15 +1,18 @@
 import base64
 from functools import lru_cache
+from threading import Lock
 
 import cv2
 import numpy as np
 from flask import Flask, jsonify, render_template, request
 
+from detector import ObjectDetector
 from ocr_reader import OCRReader
 
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
+processing_lock = Lock()
 
 
 @lru_cache(maxsize=12)
@@ -20,6 +23,12 @@ def get_reader(ocr_language, target_language, confidence):
         translate=True,
         min_confidence=confidence,
     )
+
+
+@lru_cache(maxsize=1)
+def get_detector():
+    # YOLO yalnızca nesne algılama ilk kez istendiğinde yüklenir.
+    return ObjectDetector(model_name="yolo11s.pt")
 
 
 @app.get("/")
@@ -40,15 +49,30 @@ def process_image():
 
     ocr_language = request.form.get("ocr_language", "eng").strip() or "eng"
     target_language = request.form.get("target_language", "tr").strip() or "tr"
+    detect_objects = request.form.get("detect_objects", "true").lower() == "true"
+    detect_text = request.form.get("detect_text", "true").lower() == "true"
+    live_mode = request.form.get("live", "false").lower() == "true"
     try:
         confidence = max(0.0, min(100.0, float(request.form.get("confidence", 55))))
     except ValueError:
         confidence = 55.0
 
     try:
-        reader = get_reader(ocr_language, target_language, confidence)
-        lines = reader.read(frame, synchronous_translation=True)
-        annotated = reader.draw_result(frame.copy(), lines)
+        with processing_lock:
+            annotated = frame.copy()
+            if detect_objects:
+                annotated = get_detector().detect_and_draw(
+                    annotated, image_size=416 if live_mode else 640
+                )
+            lines = []
+            if detect_text:
+                reader = get_reader(ocr_language, target_language, confidence)
+                lines = reader.read(
+                    frame,
+                    synchronous_translation=not live_mode,
+                    fast=live_mode,
+                )
+                annotated = reader.draw_result(annotated, lines)
     except Exception as exc:
         return jsonify({"error": f"İşlem tamamlanamadı: {exc}"}), 500
 

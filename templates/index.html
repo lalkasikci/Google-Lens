@@ -8,14 +8,6 @@
 </head>
 <body>
   <main class="shell">
-    <header class="hero">
-      <div class="brand-mark" aria-hidden="true"><span></span></div>
-      <div>
-        <p class="eyebrow">MINI GOOGLE LENS</p>
-        <h1>Görseldeki metni<br><em>anla ve çevir.</em></h1>
-        <p class="intro">Bir fotoğraf yükle veya kameradan yakala. Metnin dilini otomatik algılayıp seçtiğin dile çevirelim.</p>
-      </div>
-    </header>
 
     <section class="workspace">
       <div class="controls card">
@@ -43,6 +35,19 @@
           <input id="confidence" type="range" min="35" max="85" value="55">
         </label>
 
+        <label class="switch-row">
+          <span>
+            <strong>Nesne algılama</strong>
+
+          </span>
+          <input id="detectObjects" name="detectionMode" type="radio" value="objects" checked>
+        </label>
+        <label class="switch-row">
+          <span>
+            <strong>Metin algılama</strong>
+          </span>
+          <input id="detectText" name="detectionMode" type="radio" value="text">
+        </label>
         <div id="dropzone" class="dropzone" tabindex="0" role="button">
           <input id="fileInput" type="file" accept="image/*" hidden>
           <div class="upload-icon">↗</div>
@@ -54,7 +59,10 @@
         <div class="or"><span>veya</span></div>
         <button id="cameraButton" class="button camera" type="button">Kamerayı aç</button>
         <video id="camera" autoplay playsinline hidden></video>
-        <button id="captureButton" class="button primary" type="button" hidden>Fotoğraf çek</button>
+        <div id="cameraActions" class="camera-actions" hidden>
+          <button id="captureButton" class="button primary" type="button">Fotoğraf çek</button>
+          <button id="liveButton" class="button live" type="button">Canlı işlemeyi başlat</button>
+        </div>
         <canvas id="canvas" hidden></canvas>
       </div>
 
@@ -62,9 +70,9 @@
         <div class="result-heading">
           <div>
             <p class="eyebrow">SONUÇ</p>
-            <h2>Algılanan metin</h2>
+            <h2>Algılanan Görüntü</h2>
           </div>
-          <span id="resultCount" class="count">Hazır</span>
+
         </div>
 
         <div id="previewPlaceholder" class="preview-placeholder">
