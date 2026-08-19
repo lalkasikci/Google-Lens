@@ -2,7 +2,6 @@ import cv2
 import torch
 from ultralytics import YOLO
 
-
 class ObjectDetector:
     def __init__(self, model_name="yolo11s.pt", confidence=0.30, device="auto"):
         # GPU otomatik algılaması
@@ -59,29 +58,46 @@ class ObjectDetector:
             "memory_percent": percent
         }
     
-    def detect_and_draw(self, frame, image_size=640):
+    def detect(self, frame, image_size=640):
         results = self.model.predict(
             frame,
             conf=self.confidence,
             imgsz=image_size,
             verbose=False,
             device=self.device,
-            iou=0.45
+            iou=0.45,
+            quantize=16 if self.device != "cpu" else None,
+            max_det=50,
         )
 
         result = results[0]
         names = result.names
+        detections = []
 
         for box in result.boxes:
             x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
             class_id = int(box.cls[0])
             score = float(box.conf[0])
-            label = f"{names[class_id]} {score:.0%}"
+            detections.append({
+                "box": [x1, y1, x2, y2],
+                "class_name": names[class_id],
+                "confidence": score,
+                "label": f"{names[class_id]} {score:.0%}",
+            })
 
+        return detections
+
+    def detect_and_draw(self, frame, image_size=640):
+        detections = self.detect(frame, image_size=image_size)
+        return self.draw_detections(frame, detections)
+
+    def draw_detections(self, frame, detections):
+        for detection in detections:
+            x1, y1, x2, y2 = detection["box"]
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 220, 0), 2)
             cv2.putText(
                 frame,
-                label,
+                detection["label"],
                 (x1, max(25, y1 - 8)),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.6,
@@ -89,5 +105,4 @@ class ObjectDetector:
                 2,
                 cv2.LINE_AA,
             )
-
         return frame

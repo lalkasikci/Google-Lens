@@ -58,7 +58,6 @@
 
         <div class="or"><span>veya</span></div>
         <button id="cameraButton" class="button camera" type="button">Kamerayı aç</button>
-        <video id="camera" autoplay playsinline hidden></video>
         <div id="cameraActions" class="camera-actions" hidden>
           <button id="captureButton" class="button primary" type="button">Fotoğraf çek</button>
           <button id="liveButton" class="button live" type="button">Canlı işlemeyi başlat</button>
@@ -75,6 +74,10 @@
 
         </div>
 
+        <div id="cameraStage" class="camera-stage" hidden>
+          <video id="camera" autoplay playsinline muted></video>
+          <canvas id="overlayCanvas"></canvas>
+        </div>
         <div id="previewPlaceholder" class="preview-placeholder">
           <div class="focus-frame"></div>
           <p>Sonuç görseli burada görünecek</p>

@@ -58,7 +58,10 @@ input[type="range"] { accent-color: var(--green); width: 100%; }
 .camera-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
 .or { display: flex; align-items: center; gap: 12px; color: #99a29c; font-size: .72rem; margin: 17px 0; }
 .or::before, .or::after { content: ""; height: 1px; flex: 1; background: var(--line); }
-video { width: 100%; margin-top: 14px; border-radius: 14px; background: #18201c; }
+.camera-stage { position: relative; width: 100%; height: auto; aspect-ratio: 4 / 3; margin-block: auto; border-radius: 16px; overflow: hidden; background: #18201c; }
+#camera, #overlayCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+#camera { object-fit: fill; }
+#overlayCanvas { pointer-events: none; }
 .result-heading { display: flex; justify-content: space-between; align-items: start; margin-bottom: 18px; }
 h2 { margin: 0; font-family: Georgia, serif; font-size: 1.85rem; font-weight: 500; }
 .count { padding: 8px 12px; border-radius: 999px; background: #edf2ed; color: var(--green); font-size: .75rem; font-weight: 800; }

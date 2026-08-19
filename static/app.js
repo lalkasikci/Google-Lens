@@ -5,7 +5,9 @@ const cameraButton = document.querySelector("#cameraButton");
 const captureButton = document.querySelector("#captureButton");
 const liveButton = document.querySelector("#liveButton");
 const cameraActions = document.querySelector("#cameraActions");
+const cameraStage = document.querySelector("#cameraStage");
 const camera = document.querySelector("#camera");
+const overlayCanvas = document.querySelector("#overlayCanvas");
 const canvas = document.querySelector("#canvas");
 const confidence = document.querySelector("#confidence");
 const confidenceValue = document.querySelector("#confidenceValue");
@@ -52,9 +54,22 @@ cameraButton.addEventListener("click", async () => {
     return;
   }
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "environment",
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        frameRate: { ideal: 30 }
+      },
+      audio: false
+    });
     camera.srcObject = stream;
-    camera.hidden = false;
+    await camera.play();
+    cameraStage.style.aspectRatio = `${camera.videoWidth} / ${camera.videoHeight}`;
+    // Kamera ilk anda sagdaki sonuc alaninda gosterilir.
+    cameraStage.hidden = false;
+    placeholder.hidden = true;
+    resultImage.hidden = true;
     cameraActions.hidden = false;
     cameraButton.textContent = "Kamerayı kapat";
   } catch (_error) {
@@ -70,12 +85,18 @@ liveButton.addEventListener("click", () => {
   liveScanning = !liveScanning;
   liveButton.classList.toggle("active", liveScanning);
   liveButton.textContent = liveScanning ? "Canlı işlemeyi durdur" : "Canlı işlemeyi başlat";
-  if (liveScanning) processLiveFrame();
+  if (liveScanning) {
+    cameraStage.hidden = false;
+    resultImage.hidden = true;
+    placeholder.hidden = true;
+    processLiveFrame();
+  }
 });
 
 async function cameraFrame() {
   if (!camera.videoWidth || !camera.videoHeight) return null;
-  const maxWidth = 720;
+  const selectedMode = document.querySelector('input[name="detectionMode"]:checked').value;
+  const maxWidth = selectedMode === "objects" ? 480 : 640;
   const scale = Math.min(1, maxWidth / camera.videoWidth);
   canvas.width = Math.round(camera.videoWidth * scale);
   canvas.height = Math.round(camera.videoHeight * scale);
@@ -90,7 +111,7 @@ async function processLiveFrame() {
     const file = await cameraFrame();
     if (file) await processFile(file, true);
   }
-  if (liveScanning) window.setTimeout(processLiveFrame, 650);
+  if (liveScanning) window.setTimeout(processLiveFrame, 100);
 }
 
 function stopCamera() {
@@ -100,7 +121,9 @@ function stopCamera() {
   stream.getTracks().forEach(track => track.stop());
   stream = null;
   camera.srcObject = null;
-  camera.hidden = true;
+  cameraStage.hidden = true;
+  clearOverlay();
+  if (resultImage.hidden) placeholder.hidden = false;
   cameraActions.hidden = true;
   cameraButton.textContent = "Kamerayı aç";
 }
@@ -117,8 +140,10 @@ async function processFile(file, isLive = false) {
   form.append("detect_objects", detectionMode === "objects");
   form.append("detect_text", detectionMode === "text");
   form.append("live", isLive);
-  showStatus(isLive ? "Canlı görüntü işleniyor…" : "Görüntü işleniyor…");
-  setResultCount("İşleniyor");
+  if (!isLive) {
+    showStatus("Görüntü işleniyor…");
+    setResultCount("İşleniyor");
+  }
   translations.replaceChildren();
 
   try {
@@ -126,11 +151,32 @@ async function processFile(file, isLive = false) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "İşlem başarısız oldu.");
 
-    resultImage.src = data.image;
-    resultImage.hidden = false;
-    placeholder.hidden = true;
-    setResultCount(`${data.count} satır`);
-    showStatus(data.count ? "İşlem tamamlandı." : "Metin bulunamadı. Görseli yaklaştırmayı deneyin.");
+    if (isLive) {
+      cameraStage.hidden = false;
+      resultImage.hidden = true;
+      placeholder.hidden = true;
+      drawOverlay(data);
+    } else {
+      resultImage.src = data.image;
+      resultImage.hidden = false;
+      cameraStage.hidden = true;
+      placeholder.hidden = true;
+      clearOverlay();
+    }
+    if (detectionMode === "objects") {
+      const detectedObjects = (data.detections || []).map(detection =>
+        `${detection.class_name} %${Math.round(detection.confidence * 100)}`
+      );
+      setResultCount(`${detectedObjects.length} nesne`);
+      showStatus(
+        detectedObjects.length
+          ? `Algılanan: ${detectedObjects.join(", ")}`
+          : "Nesne bulunamadı."
+      );
+    } else {
+      setResultCount(`${data.count} satır`);
+      showStatus(data.count ? "Metin algılama tamamlandı." : "Metin bulunamadı. Görseli yaklaştırmayı deneyin.");
+    }
     renderTranslations(data.lines);
   } catch (error) {
     setResultCount("Hata");
@@ -162,6 +208,42 @@ function renderTranslations(lines) {
     row.append(original, arrow, translated);
     translations.append(row);
   });
+}
+
+function drawOverlay(data) {
+  overlayCanvas.width = data.frame_width;
+  overlayCanvas.height = data.frame_height;
+  const context = overlayCanvas.getContext("2d");
+  context.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  context.lineWidth = 2;
+  context.font = "bold 16px Arial";
+
+  (data.detections || []).forEach(detection => {
+    drawBox(context, detection.box, detection.label, "#32dc78");
+  });
+
+  (data.lines || []).forEach(line => {
+    const label = `[${line.detected_language}] ${line.translated}`;
+    drawBox(context, line.box, label, "#ff9f43");
+  });
+}
+
+function drawBox(context, box, label, color) {
+  const [x1, y1, x2, y2] = box;
+  context.strokeStyle = color;
+  context.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+  const textWidth = context.measureText(label).width;
+  const labelY = Math.max(0, y1 - 23);
+  context.fillStyle = "rgba(18, 31, 25, .88)";
+  context.fillRect(x1, labelY, textWidth + 12, 23);
+  context.fillStyle = color;
+  context.fillText(label, x1 + 6, labelY + 17);
+}
+
+function clearOverlay() {
+  const context = overlayCanvas.getContext("2d");
+  context.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 }
 
 function showStatus(message, isError = false) {

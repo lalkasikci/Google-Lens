@@ -1,7 +1,6 @@
 import cv2
 import time
 
-
 def resize_keep_ratio(image, max_width=1000, max_height=700):
     height, width = image.shape[:2]
     scale = min(max_width / width, max_height / height, 1.0)

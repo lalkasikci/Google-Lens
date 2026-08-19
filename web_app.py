@@ -60,10 +60,16 @@ def process_image():
     try:
         with processing_lock:
             annotated = frame.copy()
+            processing_device = "CPU"
+            detections = []
             if detect_objects:
-                annotated = get_detector().detect_and_draw(
-                    annotated, image_size=416 if live_mode else 640
+                detector = get_detector()
+                detections = detector.detect(
+                    annotated, image_size=320 if live_mode else 640
                 )
+                if not live_mode:
+                    annotated = detector.draw_detections(annotated, detections)
+                processing_device = detector.get_gpu_stats()["device"]
             lines = []
             if detect_text:
                 reader = get_reader(ocr_language, target_language, confidence)
@@ -72,28 +78,39 @@ def process_image():
                     synchronous_translation=not live_mode,
                     fast=live_mode,
                 )
-                annotated = reader.draw_result(annotated, lines)
+                if not live_mode:
+                    annotated = reader.draw_result(annotated, lines)
     except Exception as exc:
         return jsonify({"error": f"İşlem tamamlanamadı: {exc}"}), 500
-
-    ok, encoded = cv2.imencode(".jpg", annotated, [cv2.IMWRITE_JPEG_QUALITY, 90])
-    if not ok:
-        return jsonify({"error": "Sonuç görseli oluşturulamadı."}), 500
 
     response_lines = [
         {
             "original": line.get("source_text", line["text"]),
             "translated": line.get("translated_text", line["text"]),
             "detected_language": line.get("detected_language", "unknown"),
+            "box": list(line["box"]),
         }
         for line in lines
     ]
+
+    image_data = None
+    if not live_mode:
+        ok, encoded = cv2.imencode(
+            ".jpg", annotated, [cv2.IMWRITE_JPEG_QUALITY, 90]
+        )
+        if not ok:
+            return jsonify({"error": "Sonuç görseli oluşturulamadı."}), 500
+        image_data = "data:image/jpeg;base64," + base64.b64encode(encoded).decode("ascii")
+
     return jsonify(
         {
             "lines": response_lines,
+            "detections": detections,
             "count": len(response_lines),
-            "image": "data:image/jpeg;base64,"
-            + base64.b64encode(encoded).decode("ascii"),
+            "device": processing_device,
+            "frame_width": int(frame.shape[1]),
+            "frame_height": int(frame.shape[0]),
+            "image": image_data,
         }
     )
 
