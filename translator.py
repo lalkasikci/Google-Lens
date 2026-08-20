@@ -1,17 +1,11 @@
 from functools import lru_cache
 from queue import Queue
 from threading import Thread
-
 from deep_translator import GoogleTranslator
 from langdetect import DetectorFactory, LangDetectException, detect
 
-
-# Dil algilama sonucunun ayni metin icin her calistirmada ayni olmasini saglar.
 DetectorFactory.seed = 0
-
-
 class TextTranslator:
-    """Metnin dilini algilar ve satirlari istenen dile cevirir."""
 
     def __init__(self, target_language="tr", enabled=True):
         self.target_language = target_language.lower()
@@ -82,7 +76,6 @@ class TextTranslator:
                         self._warned = True
                 continue
 
-            # OCR sonucu hemen gosterilir; ag cevirisi kamerayi bekletmez.
             line["translated_text"] = self._translations.get(source_text, source_text)
             if source_text not in self._translations and source_text not in self._pending:
                 self._pending.add(source_text)

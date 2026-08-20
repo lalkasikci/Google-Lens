@@ -1,5 +1,4 @@
 import cv2
-import time
 
 def resize_keep_ratio(image, max_width=1000, max_height=700):
     height, width = image.shape[:2]
@@ -98,7 +97,7 @@ def draw_gpu_stats(frame, detector, fps=0):
             cv2.LINE_AA,
         )
     
-    # FPS göstergesi
+  
     if fps > 0:
         cv2.putText(
             result,

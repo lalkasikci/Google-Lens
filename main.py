@@ -52,7 +52,6 @@ def run_image_mode(image_path, detector, ocr):
 
     while True:
         shown = process_frame(image, mode, detector, ocr, text_result)
-        shown = draw_status_bar(shown, MODE_NAMES[mode])
         cv2.imshow("Mini Google Lens", shown)
 
         key = cv2.waitKey(0) & 0xFF

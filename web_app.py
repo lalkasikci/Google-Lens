@@ -1,7 +1,6 @@
 import base64
 from functools import lru_cache
 from threading import Lock
-
 import cv2
 import numpy as np
 from flask import Flask, jsonify, render_template, request

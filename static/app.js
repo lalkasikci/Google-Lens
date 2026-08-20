@@ -219,7 +219,7 @@ function drawOverlay(data) {
   context.font = "bold 16px Arial";
 
   (data.detections || []).forEach(detection => {
-    drawBox(context, detection.box, detection.label, "#32dc78");
+    drawBox(context, detection.box, detection.label, "#258cff");
   });
 
   (data.lines || []).forEach(line => {
